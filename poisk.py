@@ -6,11 +6,59 @@ import namer
 
 next_object_id = 1
 
+def main():
+# Game
+
+  commands = {
+    'help': help,
+    'places': print_places,
+    'rooms': print_rooms,
+    'where': get_location,
+    'travel': travel,
+    'go': change_room,
+    'l': look,
+    'look': look,
+    'kill': kill,
+    'target': target,
+    'die': die,
+    'loot': loot,
+    'inventory': get_inventory,
+  }
+
+  p = Player()
+  print "%s embarks on a journey." % p.name
+  print "Type 'help' for a list of commands."
+  travel(cities[random.choice(cities.keys())].name, p)
+
+  while(p.state != 'dead'):
+    line = raw_input("> ")
+    args = line.split()
+    if len(args) > 0:
+      commandFound = False
+      for c in commands.keys():
+        if args[0] == c[:len(args[0])]:
+          if len(args) > 1:
+            try: 
+              commands[c](" ".join(args[1:]), p)
+            except TypeError:
+              print "This suggestion does not take an argument."
+          else:
+            try:
+              commands[c](p)
+            except TypeError:
+              print "This suggestion needs a target."
+          commandFound = True
+          break
+      if not commandFound:
+        print "%s doesn't understand the suggestion." % p.name
+
+
 def generate_id():
 	global next_object_id
 	id = next_object_id
 	next_object_id += 1
 	return id
+
 
 # Dicts
 
@@ -30,6 +78,7 @@ class Being:
 	    self.room = None
 	    self.id = 0
 	    self.hp = 0
+	    self.items = {}
 	    objects[self.id] = "Being"
 
 	def get_name(self):
@@ -68,12 +117,19 @@ class Character(Being):
 		self.id = id
 		self.race = race
 
+		tag_id = generate_id()
+		tag_name = "Dogtag of %s" % self.name
+		self.items[tag_id] = Item(tag_id, tag_name)
+
 class Creature(Being):
 	def __init__(self, id=0, race="generic baddie"):
 		Being.__init__(self)
 		self.race = race
 		self.id = id
 		self.hp = random.randint(1,5)
+
+		drop_id = generate_id()
+		self.items[drop_id] = Item(drop_id, "Rat meat")
 
 class Location:
 	def __init__(self):
@@ -141,6 +197,12 @@ class Room:
 		self.items = {}
 		self.id = id
 
+class Item:
+	def __init__(self, id=0, name="Thingamajig"):
+		self.name = name
+		self.id = id
+		self.description = "Generic item."
+
 
 # Generate world
 
@@ -165,10 +227,25 @@ generate_world(3,3,3)
 
 # Commands
 
-def help():
-	print commands.keys()
+def help(p):
+    commands_help = {
+      'help': help,
+      'places': print_places,
+      'rooms': print_rooms,
+      'where': get_location,
+      'travel': travel,
+      'go': change_room,
+      'l': look,
+      'look': look,
+      'kill': kill,
+      'target': target,
+      'die': die,
+      'inventory': get_inventory,
+      'loot': loot,
+    }
+    print commands_help.keys()
 
-def print_places():
+def print_places(p):
 	if cities.keys():
 		list_cities = []
 		for c in cities.keys():
@@ -185,13 +262,13 @@ def print_places():
 			list_dungeons.append(dungeons[c].name)
 		print "Dungeons:", ", ".join(list_dungeons)
 
-def print_rooms():
+def print_rooms(p):
 	if p.city:
 		print p.city.rooms.keys()
 	else:
 		print "%s is not currently in a city." % p.name
 
-def get_location():
+def get_location(p):
 	if p.city and p.room: 
 		print "%s stands in %s (%s) in %s." % (p.name, p.room.name, p.room.id, p.city.name)
 	elif p.city:
@@ -199,35 +276,60 @@ def get_location():
 	else:
 		print "%s is not currently anywhere." % p.name
 
-def change_room(room):
+def change_room(room, p):
 	room = int(room)
 	if room and p.city and room in p.city.rooms.keys():
 		p.room = p.city.rooms[room]
 	else:
 		print "Please enter a valid room ID."
 
-def look():
+def get_inventory(p):
+	if p.items.keys():
+		inventory = []
+		for i in p.items.keys():
+			inventory.append(p.items[i].name)
+		print "Inventory:", ", ".join(inventory)
+	else:
+		print "%s is emptyhanded." % p.name
+
+def look(p):
 	if p.room:
-		get_location()
+		get_location(p)
 		beings = p.room.beings.keys()
+		counter = 1
 		for i in beings:
 			being = p.room.beings[i]
-			print "A %s is here [%s]." % (being.get_short_desc(), being.state)
+			print "%s. A %s is here [%s]." % (counter, being.get_short_desc(), being.state)
+			counter += 1
 	else:
 		print "%s is not currently in a room." % p.name
 
-def kill(target=""):
-	if target:
-		target(target)
-	if p.target and p.target.state != "dead":
-		print "%s slaughters %s." % (p.name, p.target.get_name())
-		p.target.state = "dead"
-		p.target = None
+def kill(p):
+    chance = random.randint(1, 10)
+    if p.target and p.target.state != "dead" and chance%2 is 0:
+	    print "%s slaughters %s." % (p.name, p.target.get_name())
+	    p.target.state = "dead"
+	    p.target = None
+    elif p.target and p.target.state != "dead" and chance%2 is 1:
+	    print "%s missed %s!!" % (p.name, p.target.get_name())
+    else:
+	    print "Invalid target."
+	    p.target = None
+
+def loot(p):
+	if p.target and p.target.state == "dead":
+		if p.target.items.keys():
+			for i in p.target.items.keys():
+				item = p.target.items[i]
+				p.items[item.id] = item
+				del p.target.items[i]
+				print "%s picks up a %s." % (p.name, item.name)
+		else:
+			print "There is nothing to loot."
 	else:
 		print "Invalid target."
-		p.target = None
 
-def travel(target):
+def travel(target, p):
 	target = target.lower()
 	target_found = False
 	for c in cities.keys() + dungeons.keys() + wilds.keys():
@@ -248,67 +350,48 @@ def travel(target):
 		print "Invalid location. Type 'places' for valid locations."
 
 
-def target(target):
-	target = target.lower()
-	target_found = False
-	for c in p.room.beings.keys():
-		being = p.room.beings[c]
-		if being.name and target == being.name[:len(target)].lower():
-			target_found = True
-			break
-		elif target == being.race[:len(target)].lower():
-			target_found = True
-			break
-	if target_found:
-		p.target = being
-		print "%s now targets %s." % (p.name, p.target.get_name())
+def target(target, p):
+	being = None
+	if target.isdigit():
+		target = int(target)
+		try:
+			being = p.room.beings[p.room.beings.keys()[int(target)-1]]
+		except IndexError:
+			print "Invalid target."
+			p.target = None
+		if being:
+			p.target = being
+			print "%s now targets %s." % (p.name, p.target.get_name())
 	else:
-		print "Invalid target."
-		p.target = None
+		target = target.lower()
+		target_found = False
+		corpse = None
+		for c in p.room.beings.keys():
+			being = p.room.beings[c]
+			if being.name and target == being.name[:len(target)].lower():
+				if being.state == "dead": # Corpses are low priority targets
+					corpse = being
+				else:
+					target_found = True
+					break
+			elif target == being.race[:len(target)].lower():
+				target_found = True
+				break
+		if target_found:
+			p.target = being
+			print "%s now targets %s." % (p.name, p.target.get_name())
+		elif corpse:
+			p.target = corpse
+			print "%s now targets %s." % (p.name, p.target.get_name())
+		else:
+			print "Invalid target."
+			p.target = None
 
 	
-def die():
+def die(p):
 	print "Game over."
 	p.state = "dead"
 
-# Game
 
-commands = {
-	'help': help,
-	'places': print_places,
-	'rooms': print_rooms,
-	'where': get_location,
-	'travel': travel,
-	'go': change_room,
-	'look': look,
-	'kill': kill,
-	'target': target,
-	'die': die,
-}
-
-p = Player()
-print "%s embarks on a journey." % p.name
-print "Type 'help' for a list of commands."
-travel(cities[random.choice(cities.keys())].name)
-
-while(p.state != 'dead'):
-  line = raw_input("> ")
-  args = line.split()
-  if len(args) > 0:
-    commandFound = False
-    for c in commands.keys():
-      if args[0] == c[:len(args[0])]:
-        if len(args) > 1:
-          try: 
-            commands[c](" ".join(args[1:]))
-          except TypeError:
-            print "This suggestion does not take an argument."
-        else:
-          try: 
-            commands[c]()
-          except TypeError:
-            print "This suggestion needs a target."
-        commandFound = True
-        break
-    if not commandFound:
-      print "%s doesn't understand the suggestion." % p.name
+if __name__ == '__main__':
+  main()
