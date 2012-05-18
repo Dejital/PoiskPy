@@ -10,9 +10,9 @@ Todo
 
 ### Minor
 
-* `kill` function to take either one or two parameters, the second 
+* ~~`kill` function to take either one or two parameters, the second 
   parameter being the target of the `kill` function. Otherwise, use 
-  the current target.
+  the current target.~~
 
 ### Major
 

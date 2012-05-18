@@ -38,15 +38,28 @@ def main():
             for c in commands.keys():
                 if args[0] == c[:len(args[0])]:
                     if len(args) > 1:
-                        try: 
-                            commands[c](" ".join(args[1:]), p)
-                        except TypeError:
-                            print "This suggestion does not take an argument."
+                        if c is 'kill':
+                            try:
+                                commands['target'](" ".join(args[1:]), p)
+                                commands[c](p)
+                            except TypeError:
+                                print "This suggestion does not take an argument."
+                        else:
+                            try: 
+                                commands[c](" ".join(args[1:]), p)
+                            except TypeError:
+                                print "This suggestion does not take an argument."
                     else:
-                        try:
-                            commands[c](p)
-                        except TypeError:
-                            print "This suggestion needs a target."
+                        if c is 'help':
+                            try:
+                                commands[c](p, commands)
+                            except TypeError:
+                                print "This suggestion needs a target."
+                        else:
+                            try:
+                                commands[c](p)
+                            except TypeError:
+                                print "This suggestion needs a target."
                     commandFound = True
                     break
             if not commandFound:
@@ -227,23 +240,8 @@ generate_world(3,3,3)
 
 # Commands
 
-def help(p):
-    commands_help = {
-        'help': help,
-        'places': print_places,
-        'rooms': print_rooms,
-        'where': get_location,
-        'travel': travel,
-        'go': change_room,
-        'l': look,
-        'look': look,
-        'kill': kill,
-        'target': target,
-        'die': die,
-        'inventory': get_inventory,
-        'loot': loot,
-    }
-    print commands_help.keys()
+def help(p, comm_dict):
+    print comm_dict.keys()
 
 def print_places(p):
     if cities.keys():
@@ -277,11 +275,14 @@ def get_location(p):
         print "%s is not currently anywhere." % p.name
 
 def change_room(room, p):
-    room = int(room)
-    if room and p.city and room in p.city.rooms.keys():
-        p.room = p.city.rooms[room]
-    else:
-        print "Please enter a valid room ID."
+    try:
+        room = int(room)
+        if room and p.city and room in p.city.rooms.keys():
+            p.room = p.city.rooms[room]
+        else:
+            print "Please enter a valid room ID."
+    except ValueError:
+        print "Please enter a room number"
 
 def get_inventory(p):
     if p.items.keys():
@@ -315,6 +316,7 @@ def kill(p):
     else:
         print "Invalid target."
         p.target = None
+
 
 def loot(p):
     if p.target and p.target.state == "dead":
