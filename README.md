@@ -5,11 +5,6 @@ Command line single-player RPG in Python with a randomly generated and populated
 
 Poisk is Russian for "search."
 
-This is a collaboration between Sergey Kutserubov and Brian Cain
-
-* Sergey: https://github.com/Dejital
-* Brian: https://github.com/lawlypop
-
 Todo
 ----
 
@@ -26,3 +21,11 @@ Todo
 * Character attributes
 
 * Generated world map
+
+Credits
+-------
+
+This is a collaboration between Sergey Kutserubov and Brian Cain
+
+* Sergey: https://github.com/Dejital
+* Brian: https://github.com/lawlypop
