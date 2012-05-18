@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import random
+from random import randint, choice
 import namer
 
 # Generating unique object IDs
@@ -8,7 +8,11 @@ next_object_id = 1
 
 def main():
 # Game
-    
+    # cities, wilderness, dungeons
+    rand_cit = randint(2,5)
+    rand_wild = randint(2,5)
+    rand_dung = randint(2,5)
+    generate_world(rand_cit, rand_wild, rand_dung)
     commands = {
         'help': help,
         'places': print_places,
@@ -28,7 +32,7 @@ def main():
     p = Player()
     print "%s embarks on a journey." % p.name
     print "Type 'help' for a list of commands."
-    travel(cities[random.choice(cities.keys())].name, p)
+    travel(cities[choice(cities.keys())].name, p)
 
     while(p.state != 'dead'):
         line = raw_input("> ")
@@ -139,7 +143,7 @@ class Creature(Being):
         Being.__init__(self)
         self.race = race
         self.id = id
-        self.hp = random.randint(1,5)
+        self.hp = randint(1,5)
 
         drop_id = generate_id()
         self.items[drop_id] = Item(drop_id, "Rat meat")
@@ -160,17 +164,17 @@ class Location:
             self.rooms[id].description = "A passageway from one room to another."
 
     def spawn_humans(self, multiplier=2):
-        num_humans = random.randint(1, self.size * multiplier)
+        num_humans = randint(1, self.size * multiplier)
         for i in range(num_humans):
             id = generate_id()
-            room = self.rooms[random.choice(self.rooms.keys())]
+            room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Character(id)
 
     def spawn_baddies(self, multiplier=3):
-        num_baddies = random.randint(0, self.size * multiplier)
+        num_baddies = randint(0, self.size * multiplier)
         for i in range(num_baddies):
             id = generate_id()
-            room = self.rooms[random.choice(self.rooms.keys())]
+            room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Creature(id, "rat")
 
 class City(Location):
@@ -224,19 +228,17 @@ def generate_world(num_cities=0, num_wilderness=0, num_dungeons=0):
     for i in range(num_cities):
         id = generate_id()
         objects[id] = "City"
-        cities[id] = City(id, random.randint(3,6))
+        cities[id] = City(id, randint(3,6))
 
     for i in range(num_wilderness):
         id = generate_id()
         objects[id] = "Wilderness"
-        wilds[id] = Wilderness(id, random.randint(3,6))
+        wilds[id] = Wilderness(id, randint(3,6))
 
     for i in range(num_dungeons):
         id = generate_id()
         objects[id] = "Dungeon"
-        dungeons[id] = Dungeon(id, random.randint(3,6))
-
-generate_world(3,3,3)
+        dungeons[id] = Dungeon(id, randint(3,6))
 
 # Commands
 
@@ -306,7 +308,7 @@ def look(p):
         print "%s is not currently in a room." % p.name
 
 def kill(p):
-    chance = random.randint(1, 10)
+    chance = randint(1, 10)
     if p.target and p.target.state != "dead" and chance%2 is 0:
         print "%s slaughters %s." % (p.name, p.target.get_name())
         p.target.state = "dead"

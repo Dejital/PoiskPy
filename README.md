@@ -20,7 +20,10 @@ Todo
 
 * Character attributes
 
-* Generated world map
+* ~~Generated world map~~
+
+    > FIXED: Locations randomly generated between 2 - 5 places
+    > TODO: Place locations on a map matrix and assign location tuples
 
 Credits
 -------
