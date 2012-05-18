@@ -379,8 +379,11 @@ def target(target, p):
                     target_found = True
                     break
             elif target == being.race[:len(target)].lower():
-                target_found = True
-                break
+                if being.state == "dead": # Corpses are low priority targets
+                    corpse = being
+                else:
+                    target_found = True
+                    break
         if target_found:
             p.target = being
             print "%s now targets %s." % (p.name, p.target.get_name())
