@@ -8,8 +8,8 @@ next_object_id = 1
 
 def main():
 # Game
-
-  commands = {
+    
+    commands = {
     'help': help,
     'places': print_places,
     'rooms': print_rooms,
@@ -23,34 +23,34 @@ def main():
     'die': die,
     'loot': loot,
     'inventory': get_inventory,
-  }
+    }
 
-  p = Player()
-  print "%s embarks on a journey." % p.name
-  print "Type 'help' for a list of commands."
-  travel(cities[random.choice(cities.keys())].name, p)
+    p = Player()
+    print "%s embarks on a journey." % p.name
+    print "Type 'help' for a list of commands."
+    travel(cities[random.choice(cities.keys())].name, p)
 
-  while(p.state != 'dead'):
-    line = raw_input("> ")
-    args = line.split()
-    if len(args) > 0:
-      commandFound = False
-      for c in commands.keys():
-        if args[0] == c[:len(args[0])]:
-          if len(args) > 1:
-            try: 
-              commands[c](" ".join(args[1:]), p)
-            except TypeError:
-              print "This suggestion does not take an argument."
-          else:
-            try:
-              commands[c](p)
-            except TypeError:
-              print "This suggestion needs a target."
-          commandFound = True
-          break
-      if not commandFound:
-        print "%s doesn't understand the suggestion." % p.name
+    while(p.state != 'dead'):
+        line = raw_input("> ")
+        args = line.split()
+        if len(args) > 0:
+          commandFound = False
+          for c in commands.keys():
+            if args[0] == c[:len(args[0])]:
+              if len(args) > 1:
+                try: 
+                  commands[c](" ".join(args[1:]), p)
+                except TypeError:
+                  print "This suggestion does not take an argument."
+              else:
+                try:
+                  commands[c](p)
+                except TypeError:
+                  print "This suggestion needs a target."
+              commandFound = True
+              break
+          if not commandFound:
+            print "%s doesn't understand the suggestion." % p.name
 
 
 def generate_id():
