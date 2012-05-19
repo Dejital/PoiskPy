@@ -8,27 +8,31 @@ next_object_id = 1
 
 def main():
 # Game
+    w = World()
+    w.populate_world()
+
     commands = {
-        'help': help,
-        'places': print_places,
-        'rooms': print_rooms,
-        'where': get_location,
-        'travel': travel,
+        'about': about,
+        'die': die,
         'go': change_room,
+        'help': help,
+        'inventory': get_inventory,
+        'kill': kill,
         'l': look,
         'look': look,
-        'kill': kill,
-        'target': target,
-        'die': die,
         'loot': loot,
-        'inventory': get_inventory,
         'map': show_map,
+        'places': print_places,
+        'rooms': print_rooms,
+        'target': target,
+        'travel': travel,
+        'where': get_location,
     }
 
     p = Player()
     print "%s embarks on a journey." % p.name
     print "Type 'help' for a list of commands."
-    travel(cities[choice(cities.keys())].name, p)
+    travel(cities[choice(cities.keys())].name, w, p)
 
     while(p.state != 'dead'):
         line = raw_input("> ")
@@ -44,6 +48,11 @@ def main():
                                 commands[c](p)
                             except TypeError:
                                 print "This suggestion does not take an argument."
+                        elif c is 'travel':
+                            try:
+                                commands[c](" ".join(args[1:]), w, p)
+                            except TypeError:
+                                print "This suggestion does not take an argument."
                         else:
                             try: 
                                 commands[c](" ".join(args[1:]), p)
@@ -55,6 +64,10 @@ def main():
                                 commands[c](p, commands)
                             except TypeError:
                                 print "This suggestion needs a target."
+                        elif c is 'about':
+                            print "Type 'about <command>' to learn more about a specific command."
+                        elif c is 'map':
+                            commands[c](p, w)
                         else:
                             try:
                                 commands[c](p)
@@ -259,13 +272,48 @@ class World:
             print line
         print row
 
-w = World()
-w.populate_world()
 
 # Commands
 
+def about(command, p):
+    if command == 'help':
+        print "Command help prints the commands avaliable to the user."
+    elif command == 'map':
+        print "Command map prints the current world map."
+    elif command == 'kill':
+        print "Command kill will kill a target. Will also work if you type the target after the command kill."
+        print "     > kill <NPC> (This will kill an NPC, assuming there is one in the room. It will also auto target NPC)"
+        print "     > kill (This will attempt to kill a targeted NPC. Must already have target for 'kill' to work)"
+    elif command == 'rooms':
+        print "Command rooms will display the current rooms that the player can go to."
+    elif command == 'go':
+        print "Command go is how a player can travel between rooms at a location."
+    elif command == 'target':
+        print "Command target will target any NPC within the current location."
+    elif command == 'about':
+        print "Command about will give you more information about amy commands."
+    elif command == 'travel':
+        print "Command travel will make the player travel to a given location. It can be used two ways:"
+        print "     > travel <location>"
+        print "     > travel (x,y)"
+    elif command == 'look':
+        print "Command look or l will give you more information about what is within the current room."
+    elif command == 'places':
+        print "Command places will display all of the places located within the world."
+    elif command == 'die':
+        print "Command die will kill the player and quit the game."
+    elif command == 'inventory':
+        print "Command inventory will print the current items within the players pack."
+    elif command == 'where':
+        print "Command where will display where the player is currently located"
+    else:
+        print "Please enter a valid command to learn more about it."
+
 def help(p, comm_dict):
-    print comm_dict.keys()
+    try:
+        print comm_dict.keys()
+    except AttributeError:
+        print "This function takes no arguments."
 
 def print_places(p):
     if cities.keys():
@@ -355,7 +403,7 @@ def loot(p):
     else:
         print "Invalid target."
 
-def travel(target, p):
+def travel(target, w, p):
     target_found = False
     try:
         coords = tuple(abs(int(s)) for s in target[1:-1].split(','))
@@ -422,7 +470,7 @@ def target(target, p):
             print "Invalid target."
             p.target = None
 
-def show_map(p):
+def show_map(p, w):
     w.print_map()
     
 def die(p):
