@@ -8,11 +8,6 @@ next_object_id = 1
 
 def main():
 # Game
-    # cities, wilderness, dungeons
-    rand_cit = randint(2,5)
-    rand_wild = randint(2,5)
-    rand_dung = randint(2,5)
-    generate_world(rand_cit, rand_wild, rand_dung)
     commands = {
         'help': help,
         'places': print_places,
@@ -27,6 +22,7 @@ def main():
         'die': die,
         'loot': loot,
         'inventory': get_inventory,
+        'map': show_map,
     }
 
     p = Player()
@@ -220,25 +216,51 @@ class Item:
         self.id = id
         self.description = "Generic item."
 
+class World:
+    def __init__(self, width=4, height=4):
+        self.name = "Mir"
+        self.width = width
+        self.height = height
+        self.map = [ [None]*width for i in range(height) ]
 
-# Generate world
+    def populate_world(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                id = generate_id()
+                choice = randint(0,5)
+                if choice == 0:
+                    objects[id] = "City"
+                    cities[id] = City(id, randint(3,6))
+                    self.map[y][x] = cities[id]
+                elif choice == 1:
+                    objects[id] = "Dungeon"
+                    dungeons[id] = Dungeon(id, randint(3,6))
+                    self.map[y][x] = dungeons[id]
+                else:
+                    objects[id] = "Wilderness"
+                    wilds[id] = Wilderness(id, randint(3,6))
+                    self.map[y][x] = wilds[id]
+    
+    def print_map(self):
+        row = "+-" * self.width + "+"
+        for r in range(self.height):
+            print row
+            line = ""
+            for i in self.map[r]:
+                if i.__class__.__name__ == "City":
+                    line += "|C"
+                elif i.__class__.__name__ == "Dungeon":
+                    line += "|D"
+                elif i.__class__.__name__ == "Wilderness":
+                    line += "|."
+                else:
+                    line += "| "
+            line += "|"
+            print line
+        print row
 
-def generate_world(num_cities=0, num_wilderness=0, num_dungeons=0):
-
-    for i in range(num_cities):
-        id = generate_id()
-        objects[id] = "City"
-        cities[id] = City(id, randint(3,6))
-
-    for i in range(num_wilderness):
-        id = generate_id()
-        objects[id] = "Wilderness"
-        wilds[id] = Wilderness(id, randint(3,6))
-
-    for i in range(num_dungeons):
-        id = generate_id()
-        objects[id] = "Dungeon"
-        dungeons[id] = Dungeon(id, randint(3,6))
+w = World()
+w.populate_world()
 
 # Commands
 
@@ -334,18 +356,24 @@ def loot(p):
         print "Invalid target."
 
 def travel(target, p):
-    target = target.lower()
     target_found = False
-    for c in cities.keys() + dungeons.keys() + wilds.keys():
-        if c in cities.keys():
-            city = cities[c]
-        elif c in dungeons.keys():
-            city = dungeons[c]
-        elif c in wilds.keys():
-            city = wilds[c]
-        if target == city.name[:len(target)].lower():
+    try:
+        coords = tuple(abs(int(s)) for s in target[1:-1].split(','))
+        if coords[0] < w.width and coords[1] < w.height:
+            city = w.map[coords[0]][coords[1]]
             target_found = True
-            break
+    except ValueError:
+        target = target.lower()
+        for c in cities.keys() + dungeons.keys() + wilds.keys():
+            if c in cities.keys():
+                city = cities[c]
+            elif c in dungeons.keys():
+                city = dungeons[c]
+            elif c in wilds.keys():
+                city = wilds[c]
+            if target == city.name[:len(target)].lower():
+                target_found = True
+                break
     if target_found:
         p.city = city
         p.room = p.city.rooms[p.city.rooms.keys()[0]]
@@ -394,6 +422,8 @@ def target(target, p):
             print "Invalid target."
             p.target = None
 
+def show_map(p):
+    w.print_map()
     
 def die(p):
     print "Game over."
