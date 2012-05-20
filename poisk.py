@@ -406,11 +406,11 @@ def talk(p):
         t = p.target
         topics = {
                 'bye': None,
-                'hp': t.hp,
-                'id': t.id,
-                'name': t.name,
-                'race': t.race,
-                'state': t.state,
+                'hp': '"My health is %s."' % t.hp,
+                'id': '"My ID is %s."' % t.id,
+                'name': '"My name is %s."' % t.name,
+                'race': '"I was born %s."' % t.race,
+                'state': '"I am currently %s."' % t.state,
                 }
         while(p.state == 'speaking'):
             line = raw_input("> say ")
