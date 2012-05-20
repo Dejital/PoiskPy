@@ -20,6 +20,7 @@ def main():
         'kill': kill,
         'l': look,
         'look': look,
+        'talk': talk,
         'loot': loot,
         'map': show_map,
         'places': print_places,
@@ -397,6 +398,40 @@ def kill(p):
     else:
         print "Invalid target."
         p.target = None
+
+def talk(p):
+    if p.target and p.target.__class__.__name__ == "Character":
+        old_state = p.state[:]
+        p.state = 'speaking'
+        t = p.target
+        topics = {
+                'bye': None,
+                'hp': t.hp,
+                'id': t.id,
+                'name': t.name,
+                'race': t.race,
+                'state': t.state,
+                }
+        while(p.state == 'speaking'):
+            line = raw_input("> say ")
+            topicFound = False
+            for c in topics.keys():
+                if line == 'topics' or line == 'help':
+                    print topics.keys()
+                    topicFound = True
+                    break
+                elif line == 'bye':
+                    p.state = old_state
+                    topicFound = True
+                    break
+                elif line == c:
+                    print topics[c]
+                    topicFound = True
+                    break
+            if not topicFound:
+                print '"I have nothing to say about that topic."'
+    else:
+        print "Invalid target."
 
 
 def loot(p):
