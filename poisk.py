@@ -20,6 +20,7 @@ def main():
         'kill': kill,
         'l': look,
         'look': look,
+        'talk': talk,
         'loot': loot,
         'map': show_map,
         'places': print_places,
@@ -254,20 +255,29 @@ class World:
                     wilds[id] = Wilderness(id, randint(3,6))
                     self.map[y][x] = wilds[id]
     
-    def print_map(self):
-        row = "+-" * self.width + "+"
+    def print_map(self,p):
+        line = " |"
+        line += "|".join(str(n) for n in range(self.width)) + "|"
+        print line # Print x coordinates
+        row = "-" + "+-" * self.width + "+"
+
         for r in range(self.height):
             print row
-            line = ""
+            line = str(r)
             for i in self.map[r]:
+                line += "|"
+                if p.city == i:
+                    line += "\x1b[31m"
                 if i.__class__.__name__ == "City":
-                    line += "|C"
+                    line += "C"
                 elif i.__class__.__name__ == "Dungeon":
-                    line += "|D"
+                    line += "D"
                 elif i.__class__.__name__ == "Wilderness":
-                    line += "|."
+                    line += "."
                 else:
-                    line += "| "
+                    line += " "
+                if p.city == i:
+                    line += "\x1b[0m"
             line += "|"
             print line
         print row
@@ -389,6 +399,40 @@ def kill(p):
         print "Invalid target."
         p.target = None
 
+def talk(p):
+    if p.target and p.target.__class__.__name__ == "Character":
+        old_state = p.state[:]
+        p.state = 'speaking'
+        t = p.target
+        topics = {
+                'bye': None,
+                'hp': '"My health is %s."' % t.hp,
+                'id': '"My ID is %s."' % t.id,
+                'name': '"My name is %s."' % t.name,
+                'race': '"I was born %s."' % t.race,
+                'state': '"I am currently %s."' % t.state,
+                }
+        while(p.state == 'speaking'):
+            line = raw_input("> say ")
+            topicFound = False
+            for c in topics.keys():
+                if line == 'topics' or line == 'help':
+                    print topics.keys()
+                    topicFound = True
+                    break
+                elif line == 'bye':
+                    p.state = old_state
+                    topicFound = True
+                    break
+                elif line == c:
+                    print topics[c]
+                    topicFound = True
+                    break
+            if not topicFound:
+                print '"I have nothing to say about that topic."'
+    else:
+        print "Invalid target."
+
 
 def loot(p):
     if p.target and p.target.state == "dead":
@@ -408,7 +452,7 @@ def travel(target, w, p):
     try:
         coords = tuple(abs(int(s)) for s in target[1:-1].split(','))
         if coords[0] < w.width and coords[1] < w.height:
-            city = w.map[coords[0]][coords[1]]
+            city = w.map[coords[1]][coords[0]]
             target_found = True
     except ValueError:
         target = target.lower()
@@ -471,7 +515,7 @@ def target(target, p):
             p.target = None
 
 def show_map(p, w):
-    w.print_map()
+    w.print_map(p)
     
 def die(p):
     print "Game over."
