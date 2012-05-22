@@ -110,13 +110,14 @@ class Being:
         self.id = 0
         self.hp = 0
         self.items = {}
+        self.met = False
         objects[self.id] = "Being"
 
     def get_name(self):
         name = ""
         if self.state == "dead":
             name += "the corpse of "
-        if self.name:
+        if self.name and self.met:
             name += self.name
         else:
             name += "a %s" % self.race
@@ -400,7 +401,11 @@ def look(p):
         counter = 1
         for i in beings:
             being = p.room.beings[i]
-            print "%s. A %s is here [%s]." % (counter, being.get_short_desc(), being.state)
+            line = ""
+            if p.target == being: line += "\033[1m"
+            line += "%s. A %s is here [%s]." % (counter, being.get_short_desc(), being.state)
+            if p.target == being: line += "\033[0;0m"
+            print line
             counter += 1
     else:
         print "%s is not currently in a room." % p.name
