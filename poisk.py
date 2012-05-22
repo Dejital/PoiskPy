@@ -24,7 +24,6 @@ def main():
             'map': show_map,
             'places': print_places,
             'rooms': print_rooms,
-            't': target,
             'talk': talk,
             'target': target,
             'travel': travel,
@@ -42,7 +41,11 @@ def main():
         if len(args) > 0:
             commandFound = False
             for c in commands.keys():
-                if args[0] == c[:len(args[0])]:
+                if args[0].isdigit():
+                    commands['target'](args[0], p)
+                    commandFound = True
+                    break
+                elif args[0] == c[:len(args[0])]:
                     if len(args) > 1:
                         if c is 'kill':
                             try:
@@ -134,6 +137,7 @@ class Player(Being):
         self.name = raw_input("What is your character's name? ")
         if not self.name:
             self.name = namer.character_name()
+        self.name = "\033[1m" + self.name + "\033[0;0m"
         self.race = "human"
         self.hp = 10
         self.target = None
@@ -435,7 +439,13 @@ def talk(p):
                     topicFound = True
                     break
                 elif line == 'bye':
+                    print '"Good bye."'
                     p.state = old_state
+                    topicFound = True
+                    break
+                elif line == 'name':
+                    print '"My name is %s."' % t.name
+                    t.met = True
                     topicFound = True
                     break
                 elif line == c:
