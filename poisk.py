@@ -109,6 +109,7 @@ class Being:
         self.room = None
         self.id = 0
         self.hp = 0
+        self.maxhp = 0
         self.items = {}
         self.met = False
         objects[self.id] = "Being"
@@ -141,6 +142,7 @@ class Player(Being):
         self.name = "\033[1m" + self.name + "\033[0;0m"
         self.race = "human"
         self.hp = 10
+        self.maxhp = 10
         self.target = None
 
 class Character(Being):
@@ -411,13 +413,24 @@ def look(p):
         print "%s is not currently in a room." % p.name
 
 def kill(p):
-    chance = randint(1, 10)
-    if p.target and p.target.state != "dead" and chance%2 is 0:
-        print "%s slaughters %s." % (p.name, p.target.get_name())
-        p.target.state = "dead"
-        p.target = None
-    elif p.target and p.target.state != "dead" and chance%2 is 1:
-        print "%s missed %s!!" % (p.name, p.target.get_name())
+    if p.target and p.target.state != "dead":
+        roll = randint(1,6)
+        if roll > 3:
+            damage = (6.0 - roll)/6 * p.maxhp
+            damage = int(round(damage))
+            p.hp = max(1, p.hp - damage)
+            print "%s (%s/%s) slaughters %s." % (p.name, p.hp, p.maxhp, p.target.get_name())
+            p.target.state = "dead"
+            p.target = None
+        else:
+            damage = (6.0 - roll)/6 * p.maxhp
+            damage = int(round(damage))
+            p.hp = max(0, p.hp - damage)
+            print "%s (%s/%s) is defeated by %s." % (p.name, p.hp, p.maxhp, p.target.get_name())
+            if p.hp <= 0:
+                p.state = 'dead'
+                print "Game over."
+            p.target = None
     else:
         print "Invalid target."
         p.target = None
@@ -439,7 +452,10 @@ def talk(p):
             line = raw_input("> say ")
             topicFound = False
             for c in topics.keys():
-                if line == 'topics' or line == 'help':
+                if not line:
+                    topicFound = True
+                    break
+                elif line == 'topics' or line == 'help':
                     print topics.keys()
                     topicFound = True
                     break
