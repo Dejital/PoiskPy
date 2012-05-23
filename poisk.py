@@ -184,6 +184,33 @@ class Creature(Being):
         drop_id = generate_id()
         self.items[drop_id] = Item(drop_id, "Rat meat")
 
+## Rooms
+
+class Room:
+    def __init__(self, id=0, name="Abyss"):
+        self.name = name
+        self.description = "An empty space with no floor."
+        self.exits = [0, 0, 0, 0] # N, E, S, W
+        self.beings = {}
+        self.items = {}
+        self.id = id
+
+class Shop(Room):
+    def __init__(self):
+        Room.__init__(self)
+        self.name = "General Shop"
+        self.description = "Generic general goods store."
+        self.id = generate_id()
+        self.inventory = {}
+
+    def get_inventory(self):
+        if self.inventory:
+            print "The inventory of %s:" % self.name
+            for item in self.inventory.values():
+                print "%s (%s): %s" % (item.name, item.id, item.description)
+        else:
+            print "The inventory of %s is exhausted." % self.name
+
 ## Places
 
 class Location:
@@ -245,15 +272,6 @@ class Dungeon(Location):
         self.size = size
         self.generate_rooms()
         self.spawn_baddies()
-
-class Room:
-    def __init__(self, id=0, name="Abyss"):
-        self.name = name
-        self.description = "An empty space with no floor."
-        self.exits = [0, 0, 0, 0] # N, E, S, W
-        self.beings = {}
-        self.items = {}
-        self.id = id
 
 class Heaven(Location):
     def __init__(self):
