@@ -14,6 +14,7 @@ def main():
     commands = {
             'about': about,
             'die': die,
+            'equipment': get_equipment,
             'go': change_room,
             'help': help,
             'inventory': get_inventory,
@@ -73,6 +74,8 @@ def main():
                             print "Type 'about <command>' to learn more about a specific command."
                         elif c is 'map':
                             commands[c](p, w)
+                        elif c is 'equipment':
+                            commands[c](p)
                         else:
                             try:
                                 commands[c](p)
@@ -144,6 +147,26 @@ class Player(Being):
         self.hp = 10
         self.maxhp = 10
         self.target = None
+        self.w = Weapon(5, 1, 2, "Dagger") # beginner weapon
+        self.items[self.get_name()] = self.w
+    
+    def equip(self, wep):
+        self.items[wep.get_name()] = wep
+        self.w = wep
+
+class Weapon():
+    def __init__(self, off, id=0, weight=0, name="Generic Weapon"):
+        self.offense = off
+        self.id = id
+        self.weight = weight
+        self.name = name
+
+    def get_name(self):
+        return self.name
+    
+    def get_stats(self):
+        tup = ["Weapon", "Name: " + self.name, "Offense: " + str(self.offense), "ID: " + str(self.id), "Weight: " + str(self.weight)]
+        return tup
 
 class Character(Being):
     def __init__(self, id=0, race="human"):
@@ -234,10 +257,10 @@ class Room:
         self.id = id
 
 class Item:
-    def __init__(self, id=0, name="Thingamajig"):
+    def __init__(self, id=0, name="Thingamajig", description="Generic item."):
         self.name = name
         self.id = id
-        self.description = "Generic item."
+        self.description = description
 
 class World:
     def __init__(self, width=4, height=4):
@@ -341,6 +364,8 @@ def about(command, p):
         print "Command loot will loot a body of a fallen foe."
     elif command == 'talk':
         print "Command talk will initiate a conversation with a targeted NPC."
+    elif command == 'equipment':
+        print "Command equipment will display the current equipment that player is using."
     else:
         print "Please enter a valid command to learn more about it."
 
@@ -390,6 +415,9 @@ def change_room(room, p):
             print "Please enter a valid room ID."
     except ValueError:
         print "Please enter a room number"
+
+def get_equipment(p):
+    print "Current Equipment for %s is:" % (p.name), p.w.get_stats()
 
 def get_inventory(p):
     if p.items.keys():
@@ -444,6 +472,7 @@ def talk(p):
         old_state = p.state[:]
         p.state = 'speaking'
         t = p.target
+        print "This is the hp of the target:", t.hp
         topics = {
                 'bye': None,
                 'hp': '"My health is %s."' % t.hp,
