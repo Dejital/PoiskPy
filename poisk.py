@@ -74,8 +74,6 @@ def main():
                             print "Type 'about <command>' to learn more about a specific command."
                         elif c is 'map':
                             commands[c](p, w)
-                        elif c is 'equipment':
-                            commands[c](p)
                         else:
                             try:
                                 commands[c](p)
