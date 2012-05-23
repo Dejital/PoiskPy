@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from random import randint, choice
+from math import sqrt
 import namer
 
 # Generating unique object IDs
@@ -14,6 +15,7 @@ def main():
     commands = {
             'about': about,
             'die': die,
+            'explore': explore,
             'go': change_room,
             'help': help,
             'inventory': get_inventory,
@@ -24,9 +26,11 @@ def main():
             'map': show_map,
             'places': print_places,
             'rooms': print_rooms,
+            'status': status,
             'talk': talk,
             'target': target,
             'travel': travel,
+            'wait': wait,
             'where': get_location,
             }
 
@@ -144,6 +148,7 @@ class Player(Being):
         self.hp = 10
         self.maxhp = 10
         self.target = None
+        self.age = 0.0
 
 class Character(Being):
     def __init__(self, id=0, race="human"):
@@ -174,6 +179,7 @@ class Location:
         self.id = 0
         self.description = "A generic location of size %s." % self.size
         self.rooms = {}
+        self.coords = (0,0)
 
     def generate_rooms(self):
         for i in range(self.size):
@@ -266,14 +272,17 @@ class World:
                     objects[id] = "City"
                     cities[id] = City(id, randint(3,6))
                     self.map[y][x] = cities[id]
+                    cities[id].coords = (x,y)
                 elif place == "Dungeon":
                     objects[id] = "Dungeon"
                     dungeons[id] = Dungeon(id, randint(3,6))
                     self.map[y][x] = dungeons[id]
+                    dungeons[id].coords = (x,y)
                 else:
                     objects[id] = "Wilderness"
                     wilds[id] = Wilderness(id, randint(3,6))
                     self.map[y][x] = wilds[id]
+                    wilds[id].coords = (x,y)
                 del places[choice]
     
     def print_map(self,p):
@@ -331,12 +340,18 @@ def about(command, p):
         print "Command look or l will give you more information about what is within the current room."
     elif command == 'places':
         print "Command places will display all of the places located within the world."
+    elif command == 'status':
+        print "Command status will display the player's information."
     elif command == 'die':
         print "Command die will kill the player and quit the game."
+    elif command == 'explore':
+        print "Command explore will move the player to a random room."
     elif command == 'inventory':
         print "Command inventory will print the current items within the players pack."
     elif command == 'where':
         print "Command where will display where the player is currently located"
+    elif command == 'wait':
+        print "Command wait will wait for a given number of in-game hours."
     else:
         print "Please enter a valid command to learn more about it."
 
@@ -512,6 +527,19 @@ def travel(target, w, p):
                 target_found = True
                 break
     if target_found:
+        if p.city:
+            distance = (float(city.coords[0]) - p.city.coords[0])**2
+            distance += (float(city.coords[1]) - p.city.coords[1])**2
+            distance = sqrt(distance)
+            p.age += distance
+            distance = int(round(distance))
+            line = "The journey took about "
+            if distance > 1: 
+                line += "%s days on horseback." % distance
+                print line
+            elif distance == 1: 
+                line += "%s day on horseback." % distance
+                print line
         p.city = city
         p.room = p.city.rooms[p.city.rooms.keys()[0]]
         print "%s arrives at %s." % (p.name, p.city.name)
@@ -561,7 +589,44 @@ def target(target, p):
 
 def show_map(p, w):
     w.print_map(p)
-    
+
+def status(p):
+    print "%s is %s days old." % (p.name, p.age)
+    print "HP: %s/%s" % (p.hp, p.maxhp)
+
+def wait(p):
+    time = -1
+    responded = False
+    while not responded:
+        print "Wait for how many hours? (Respond blank for until healed.)"
+        time = raw_input(">> ")
+        if time.isdigit() and time >= 0:
+            responded = True
+        elif time == "":
+            responded = True
+        else:
+            print "Invalid input."
+    if time == "":
+        time = p.maxhp - p.hp
+    hours = float(time)/24
+    if time > 0:
+        print "%s waited for %s hours." % (p.name, time)
+    while p.hp < p.maxhp and time > 0:
+        p.hp += 1
+        time -= 1
+    p.age += hours
+
+def explore(p):
+    if p.city:
+        room = p.room
+        while room.id == p.room.id:
+            randroom = choice(p.city.rooms.keys())
+            room = p.city.rooms[randroom]
+        p.room = room
+        print "%s enters %s (%s)." % (p.name, p.room.name, p.room.id)
+    else:
+        print "%s is not in a valid location." % p.name
+
 def die(p):
     print "Game over."
     p.state = "dead"
