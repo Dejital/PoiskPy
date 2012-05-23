@@ -18,12 +18,13 @@ Todo
 
 * Battle system
 
+    - Use weapons to attack
+    - Add armor
+    - Add potions
+
 * Character attributes
 
-* ~~Generated world map
-
-    - FIXED: Locations randomly generated between 2 - 5 places
-    - TODO: Place locations on a map matrix and assign location tuples~~
+* ~~Generated world map~~
 
 Credits
 -------
