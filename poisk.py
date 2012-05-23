@@ -105,6 +105,8 @@ wilds = {}
 
 # Classes
 
+## Beings
+
 class Being:
     def __init__(self):
         self.name = ""
@@ -150,26 +152,14 @@ class Player(Being):
         self.maxhp = 10
         self.target = None
         self.age = 0.0
-        self.w = Weapon(5, 1, 2, "Dagger") # beginner weapon
-        self.items[self.get_name()] = self.w
+
+        wep_id = generate_id()
+        self.w = Weapon(5, wep_id, 2, "Dagger") # beginner weapon
+        self.items[wep_id] = self.w
     
     def equip(self, wep):
         self.items[wep.get_name()] = wep
         self.w = wep
-
-class Weapon():
-    def __init__(self, off, id=0, weight=0, name="Generic Weapon"):
-        self.offense = off
-        self.id = id
-        self.weight = weight
-        self.name = name
-
-    def get_name(self):
-        return self.name
-    
-    def get_stats(self):
-        tup = ["Weapon", "Name: " + self.name, "Offense: " + str(self.offense), "ID: " + str(self.id), "Weight: " + str(self.weight)]
-        return tup
 
 class Character(Being):
     def __init__(self, id=0, race="human"):
@@ -192,6 +182,8 @@ class Creature(Being):
 
         drop_id = generate_id()
         self.items[drop_id] = Item(drop_id, "Rat meat")
+
+## Places
 
 class Location:
     def __init__(self):
@@ -260,12 +252,6 @@ class Room:
         self.items = {}
         self.id = id
 
-class Item:
-    def __init__(self, id=0, name="Thingamajig", description="Generic item."):
-        self.name = name
-        self.id = id
-        self.description = description
-
 class World:
     def __init__(self, width=4, height=4):
         self.name = "Mir"
@@ -333,6 +319,27 @@ class World:
             print line
         print row
 
+
+## Items
+
+class Item:
+    def __init__(self, id=0, name="Thingamajig", description="Generic item.", weight=0):
+        self.name = name
+        self.id = id
+        self.description = description
+        self.weight = weight
+
+class Weapon(Item):
+    def __init__(self, offense, id=0, weight=0, name="Stick", description="Generic Weapon."):
+        Item.__init__(self, id, name, description, weight)
+        self.offense = offense
+
+    def get_name(self):
+        return self.name
+    
+    def get_stats(self):
+        tup = ["Weapon", "Name: " + self.name, "Offense: " + str(self.offense), "ID: " + str(self.id), "Weight: " + str(self.weight)]
+        return tup
 
 # Commands
 
