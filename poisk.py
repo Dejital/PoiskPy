@@ -14,6 +14,7 @@ def main():
 
     commands = {
             'about': about,
+            'bury': bury,
             'die': die,
             'equipment': get_equipment,
             'explore': explore,
@@ -76,7 +77,7 @@ def main():
                                 print "This suggestion needs a target."
                         elif c is 'about':
                             print "Type 'about <command>' to learn more about a specific command."
-                        elif c is 'map':
+                        elif c is 'map' or c is 'bury':
                             commands[c](p, w)
                         else:
                             try:
@@ -207,6 +208,7 @@ class Location:
             id = generate_id()
             room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Character(id)
+            room.beings[id].room = room
 
     def spawn_baddies(self, multiplier=3):
         num_baddies = randint(0, self.size * multiplier)
@@ -214,6 +216,7 @@ class Location:
             id = generate_id()
             room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Creature(id, "rat")
+            room.beings[id].room = room
 
 class City(Location):
     def __init__(self, id=0, size=0):
@@ -252,12 +255,38 @@ class Room:
         self.items = {}
         self.id = id
 
+class Heaven(Location):
+    def __init__(self):
+        Location.__init__(self)
+        self.name = "Heaven"
+        self.size = 1
+        self.id = generate_id()
+        self.build_heaven()
+
+    def build_heaven(self):
+        room = Room(generate_id(), "Chamber")
+        self.rooms[room.id] = room
+        room.description = "Heavenly chamber."
+
+    def get_chamber(self):
+        return self.rooms[self.rooms.keys()[0]]
+
+    def send_to_heaven(self, target):
+        chamber = self.get_chamber()
+        if target.room:
+            del target.room.beings[target.id]
+        target.city = self
+        target.room = chamber
+        chamber.beings[target.id] = target
+        target.state = 'eternal'
+
 class World:
     def __init__(self, width=4, height=4):
         self.name = "Mir"
         self.width = width
         self.height = height
         self.map = [ [None]*width for i in range(height) ]
+        self.heaven = Heaven()
 
     def populate_world(self):
         places = []
@@ -473,7 +502,6 @@ def kill(p):
             p.hp = max(1, p.hp - damage)
             print "%s (%s/%s) slaughters %s." % (p.name, p.hp, p.maxhp, p.target.get_name())
             p.target.state = "dead"
-            p.target = None
         else:
             damage = (6.0 - roll)/6 * p.maxhp
             damage = int(round(damage))
@@ -482,10 +510,16 @@ def kill(p):
             if p.hp <= 0:
                 p.state = 'dead'
                 print "Game over."
-            p.target = None
     else:
         print "Invalid target."
+
+def bury(p, w):
+    if p.target and p.target.state == 'dead':
+        w.heaven.send_to_heaven(p.target)
+        print "%s buries %s." % (p.name, p.target.get_name())
         p.target = None
+    else:
+        print "Invalid target."
 
 def talk(p):
     if p.target and p.target.__class__.__name__ == "Character":
