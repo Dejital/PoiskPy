@@ -337,6 +337,10 @@ def about(command, p):
         print "Command inventory will print the current items within the players pack."
     elif command == 'where':
         print "Command where will display where the player is currently located"
+    elif command == 'loot':
+        print "Command loot will loot a body of a fallen foe."
+    elif command == 'talk':
+        print "Command talk will initiate a conversation with a targeted NPC."
     else:
         print "Please enter a valid command to learn more about it."
 
