@@ -12,23 +12,23 @@ def main():
     w.populate_world()
 
     commands = {
-        'about': about,
-        'die': die,
-        'go': change_room,
-        'help': help,
-        'inventory': get_inventory,
-        'kill': kill,
-        'l': look,
-        'look': look,
-        'talk': talk,
-        'loot': loot,
-        'map': show_map,
-        'places': print_places,
-        'rooms': print_rooms,
-        'target': target,
-        'travel': travel,
-        'where': get_location,
-    }
+            'about': about,
+            'die': die,
+            'go': change_room,
+            'help': help,
+            'inventory': get_inventory,
+            'kill': kill,
+            'l': look,
+            'look': look,
+            'loot': loot,
+            'map': show_map,
+            'places': print_places,
+            'rooms': print_rooms,
+            'talk': talk,
+            'target': target,
+            'travel': travel,
+            'where': get_location,
+            }
 
     p = Player()
     print "%s embarks on a journey." % p.name
@@ -41,7 +41,11 @@ def main():
         if len(args) > 0:
             commandFound = False
             for c in commands.keys():
-                if args[0] == c[:len(args[0])]:
+                if args[0].isdigit():
+                    commands['target'](args[0], p)
+                    commandFound = True
+                    break
+                elif args[0] == c[:len(args[0])]:
                     if len(args) > 1:
                         if c is 'kill':
                             try:
@@ -105,14 +109,16 @@ class Being:
         self.room = None
         self.id = 0
         self.hp = 0
+        self.maxhp = 0
         self.items = {}
+        self.met = False
         objects[self.id] = "Being"
 
     def get_name(self):
         name = ""
         if self.state == "dead":
             name += "the corpse of "
-        if self.name:
+        if self.name and self.met:
             name += self.name
         else:
             name += "a %s" % self.race
@@ -123,7 +129,7 @@ class Being:
         if self.state == "dead":
             short_desc += "corpse of a "
         short_desc += self.race
-        if self.name:
+        if self.name and self.met:
             short_desc += " named %s" % self.name
         return short_desc
 
@@ -133,8 +139,10 @@ class Player(Being):
         self.name = raw_input("What is your character's name? ")
         if not self.name:
             self.name = namer.character_name()
+        self.name = "\033[1m" + self.name + "\033[0;0m"
         self.race = "human"
         self.hp = 10
+        self.maxhp = 10
         self.target = None
 
 class Character(Being):
@@ -143,6 +151,7 @@ class Character(Being):
         self.name = namer.character_name()
         self.id = id
         self.race = race
+        self.met = False
 
         tag_id = generate_id()
         tag_name = "Dogtag of %s" % self.name
@@ -238,15 +247,26 @@ class World:
         self.map = [ [None]*width for i in range(height) ]
 
     def populate_world(self):
+        places = []
+        num_cities = randint(1,max((self.width * self.height)/5,1))
+        num_dungeons = randint(1,max((self.width * self.height)/5,1))
+        num_wilds = self.width * self.height - num_cities - num_dungeons
+        for i in range(num_cities):
+            places.append("City")
+        for i in range(num_dungeons):
+            places.append("Dungeon")
+        for i in range(num_wilds):
+            places.append("Wilderness")
         for x in range(self.width):
             for y in range(self.height):
+                choice = randint(0, len(places)-1)
+                place = places[choice]
                 id = generate_id()
-                choice = randint(0,5)
-                if choice == 0:
+                if place == "City":
                     objects[id] = "City"
                     cities[id] = City(id, randint(3,6))
                     self.map[y][x] = cities[id]
-                elif choice == 1:
+                elif place == "Dungeon":
                     objects[id] = "Dungeon"
                     dungeons[id] = Dungeon(id, randint(3,6))
                     self.map[y][x] = dungeons[id]
@@ -254,6 +274,7 @@ class World:
                     objects[id] = "Wilderness"
                     wilds[id] = Wilderness(id, randint(3,6))
                     self.map[y][x] = wilds[id]
+                del places[choice]
     
     def print_map(self,p):
         line = " |"
@@ -382,19 +403,34 @@ def look(p):
         counter = 1
         for i in beings:
             being = p.room.beings[i]
-            print "%s. A %s is here [%s]." % (counter, being.get_short_desc(), being.state)
+            line = ""
+            if p.target == being: line += "\033[1m"
+            line += "%s. A %s is here [%s]." % (counter, being.get_short_desc(), being.state)
+            if p.target == being: line += "\033[0;0m"
+            print line
             counter += 1
     else:
         print "%s is not currently in a room." % p.name
 
 def kill(p):
-    chance = randint(1, 10)
-    if p.target and p.target.state != "dead" and chance%2 is 0:
-        print "%s slaughters %s." % (p.name, p.target.get_name())
-        p.target.state = "dead"
-        p.target = None
-    elif p.target and p.target.state != "dead" and chance%2 is 1:
-        print "%s missed %s!!" % (p.name, p.target.get_name())
+    if p.target and p.target.state != "dead":
+        roll = randint(1,6)
+        if roll > 3:
+            damage = (6.0 - roll)/6 * p.maxhp
+            damage = int(round(damage))
+            p.hp = max(1, p.hp - damage)
+            print "%s (%s/%s) slaughters %s." % (p.name, p.hp, p.maxhp, p.target.get_name())
+            p.target.state = "dead"
+            p.target = None
+        else:
+            damage = (6.0 - roll)/6 * p.maxhp
+            damage = int(round(damage))
+            p.hp = max(0, p.hp - damage)
+            print "%s (%s/%s) is defeated by %s." % (p.name, p.hp, p.maxhp, p.target.get_name())
+            if p.hp <= 0:
+                p.state = 'dead'
+                print "Game over."
+            p.target = None
     else:
         print "Invalid target."
         p.target = None
@@ -416,12 +452,21 @@ def talk(p):
             line = raw_input("> say ")
             topicFound = False
             for c in topics.keys():
-                if line == 'topics' or line == 'help':
+                if not line:
+                    topicFound = True
+                    break
+                elif line == 'topics' or line == 'help':
                     print topics.keys()
                     topicFound = True
                     break
                 elif line == 'bye':
+                    print '"Good bye."'
                     p.state = old_state
+                    topicFound = True
+                    break
+                elif line == 'name':
+                    print '"My name is %s."' % t.name
+                    t.met = True
                     topicFound = True
                     break
                 elif line == c:
