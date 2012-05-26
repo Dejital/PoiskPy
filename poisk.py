@@ -27,6 +27,7 @@ def main():
             'loot': loot,
             'map': show_map,
             'places': print_places,
+            'quests': get_quests,
             'rooms': print_rooms,
             'status': status,
             'talk': talk,
@@ -153,6 +154,7 @@ class Player(Being):
         self.maxhp = 10
         self.target = None
         self.age = 0.0
+        self.quests = {}
 
         wep_id = generate_id()
         self.w = Weapon(5, wep_id, 2, "Dagger") # beginner weapon
@@ -194,6 +196,7 @@ class Room:
         self.beings = {}
         self.items = {}
         self.id = id
+        self.city = None
 
 class Shop(Room):
     def __init__(self):
@@ -220,6 +223,7 @@ class Location:
         self.id = 0
         self.description = "A generic location of size %s." % self.size
         self.rooms = {}
+        self.citizens = {}
         self.coords = (0,0)
 
     def generate_rooms(self):
@@ -236,6 +240,8 @@ class Location:
             room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Character(id)
             room.beings[id].room = room
+            self.citizens[id] = room.beings[id]
+            self.citizens[id].city = self
 
     def spawn_baddies(self, multiplier=3):
         num_baddies = randint(0, self.size * multiplier)
@@ -244,6 +250,8 @@ class Location:
             room = self.rooms[choice(self.rooms.keys())]
             room.beings[id] = Creature(id, "rat")
             room.beings[id].room = room
+            self.citizens[id] = room.beings[id]
+            self.citizens[id].city = self
 
 class City(Location):
     def __init__(self, id=0, size=0):
@@ -388,6 +396,41 @@ class Weapon(Item):
         tup = ["Weapon", "Name: " + self.name, "Offense: " + str(self.offense), "ID: " + str(self.id), "Weight: " + str(self.weight)]
         return tup
 
+## Quests
+
+class Quest:
+    def __init__(self):
+        self.name = "Quest"
+        self.id = generate_id()
+        self.giver = None
+        self.reward = None
+
+class DeliveryQuest(Quest):
+    def __init__(self, giver=None, target=None):
+        Quest.__init__(self)
+        self.name = "Fetch"
+        self.giver = giver
+        self.target = target
+
+    def generate_quest(self):
+        while not self.target: # This will hang if giver is the only NPC alive
+            city = choice(cities.values())
+            if city.citizens:
+                while True: # do-while equivalent in Python
+                    candidate = choice(city.citizens.values())
+                    if candidate.state != 'dead' and candidate is not self.giver:
+                        self.target = candidate
+                        break
+        self.name = "Find %s" % self.target.name
+        if self.target and self.giver:
+            distance = (float(self.target.city.coords[0]) - self.giver.city.coords[0])**2
+            distance += (float(self.target.city.coords[1]) - self.target.city.coords[1])**2
+            distance = sqrt(distance)
+            reward = 10 + (distance * 10) # Arbitrary reward multiplier, needs to be thought out
+            self.reward = int(round(reward))
+        else:
+            print "Failed generating quest."
+
 # Commands
 
 def about(command, p):
@@ -478,6 +521,7 @@ def change_room(room, p):
         room = int(room)
         if room and p.city and room in p.city.rooms.keys():
             p.room = p.city.rooms[room]
+            p.target = None
         else:
             print "Please enter a valid room ID."
     except ValueError:
@@ -494,6 +538,15 @@ def get_inventory(p):
         print "Inventory:", ", ".join(inventory)
     else:
         print "%s is emptyhanded." % p.name
+
+def get_quests(p):
+    if p.quests.keys():
+        quests = []
+        for q in p.quests.values():
+            quests.append(q.name)
+        print "Quests:", ", ".join(quests)
+    else:
+        print "%s has no quests to be fulfilled." % p.name
 
 def look(p):
     if p.room:
@@ -551,6 +604,7 @@ def talk(p):
                 'name': '"My name is %s."' % t.name,
                 'race': '"I was born %s."' % t.race,
                 'state': '"I am currently %s."' % t.state,
+                'quest': None
                 }
         while(p.state == 'speaking'):
             line = raw_input("> say ")
@@ -571,6 +625,30 @@ def talk(p):
                 elif line == 'name':
                     print '"My name is %s."' % t.name
                     t.met = True
+                    topicFound = True
+                    break
+                elif line == 'quest':
+                    target_of_quest = False
+                    if p.quests:
+                        for i in p.quests.keys():
+                            if p.quests[i].target is t:
+                                print '"You found me! Congratulations."'
+                                print '"We were kidding about the %s gold, though."' % p.quests[i].reward
+                                del p.quests[i]
+                                target_of_quest = True
+                                break
+                    if not target_of_quest:
+                        quest = DeliveryQuest(t)
+                        quest.generate_quest()
+                        print '"I need you to find %s of %s for me."' % (quest.target.name, quest.target.city.name)
+                        print '"They will reward you %s gold."' % (quest.reward)
+                        while True:
+                            response = raw_input('"Do you accept?" (y/n) ')
+                            if response.lower() in ('y','n'):
+                                break
+                        if response.lower() == "y":
+                            p.quests[quest.id] = quest
+                            print '"Good. Go on then."'
                     topicFound = True
                     break
                 elif line == c:
@@ -712,6 +790,7 @@ def explore(p):
             randroom = choice(p.city.rooms.keys())
             room = p.city.rooms[randroom]
         p.room = room
+        p.target = None
         print "%s enters %s (%s)." % (p.name, p.room.name, p.room.id)
     else:
         print "%s is not in a valid location." % p.name
